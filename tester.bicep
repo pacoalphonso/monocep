@@ -1,6 +1,7 @@
 targetScope='subscription'
 
-var name = 'pag-dev-sea'
+var name = 'pag-dev-sea2'
+param location string = 'westus'
 
 // module appserviceqithappinsights '../Bicep Templates/Templates/appservice/with_appinsights.bicep' = {
 //   name: name 
@@ -12,10 +13,21 @@ var name = 'pag-dev-sea'
 //   }
 // }
 
-module appservice '../Bicep Templates/Templates/appservice/with_appinsights_kv_sqlserver_vnet.bicep' = {
+// module appservice 'Templates/appservice/with_appinsights_kv_sqlserver_vnet.bicep' = {
+//   name: name
+//   params:{
+//     LOCATION: location
+//     NAME: name
+//     sku: 'P1V2'
+//     PASSWORD: '7yHL=!zHdBJ+^C)*'
+//     USERNAME: 'ME'
+//   }
+// }
+
+module functionApp 'Templates./appservice/with_appinsights_kv_redis_sqlserver_vnet.bicep' = {
   name: name
   params:{
-    LOCATION: 'westus'
+    LOCATION: location
     NAME: name
     sku: 'P1V2'
     PASSWORD: '7yHL=!zHdBJ+^C)*'

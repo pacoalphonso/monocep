@@ -1,8 +1,8 @@
 /* 
  This template creates the following:
 
-1. App Service
-2. Application Insights connected to the app service
+1. Function App
+2. Application Insights connected to the function app
 
 */
 
@@ -17,21 +17,21 @@ param LOCATION string
 param sku string = 'S1'
 @description('Optional. The name of the app service plan resource. Default value is \'<NAME>-asp\'')
 param appServicePlanName string = '${NAME}-asp'
-@description('Optional. The name of the app service resource. Default value is \'<NAME>-as\'')
-param appServiceName string = '${NAME}-as'
+@description('Optional. The name of the function app resource. Default value is \'<NAME>-fa\'')
+param appServiceName string = '${NAME}-fa'
 @description('Optional. The name of the application insights resource. Default value is \'<NAME>-ai\'')
 param applicationInsightsName string = '${NAME}-ai'
 @allowed([
   'linux'
   'windows'
 ])
-@description('Optional. Which operating system platform to use for the app service plan and consequently, the app service. Default value is \'windows\'.')
+@description('Optional. Which operating system platform to use for the app service plan and consequently, the function app. Default value is \'windows\'.')
 param platform string = 'windows'
 
-@description('Optional. The runtime stack of the app service if running on the Linux platform. Default value is \'DOTNETCORE|6.0\'.')
+@description('Optional. The runtime stack of the function app if running on the Linux platform. Default value is \'DOTNETCORE|6.0\'.')
 param linuxFxVersion string = 'DOTNETCORE|6.0'
 
-@description('Optional. The .NET framework version of the app service if runninng on the Windows platform. Default value is \'v6.0\'.')
+@description('Optional. The .NET framework version of the function app if runninng on the Windows platform. Default value is \'v6.0\'.')
 param netFrameworkVersion string = 'v6.0'
 
 @description('Optional. The tags to be used for the resources to be created.')
@@ -60,7 +60,7 @@ module AppServicePlan '../../Modules/appserviceplan.bicep' = {
 
 }
 
-module AppService '../../Modules/appservice.bicep' = {
+module FunctionApp '../../Modules/functionapp.bicep' = {
   name: appServiceName
   scope: ResourceGroup
   params:{  

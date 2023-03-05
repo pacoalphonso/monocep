@@ -1,12 +1,13 @@
 /* 
 This template creates the following:
 
-1. App Service
+1. App Service with Vnet integration
 2. Application Insights connected to the app service
-3. Sql Server (for hosting the Sql Database)
-4. Sql Database (as the backed data store for the app service)
-5. Azure Keyvault for storing the connection string and giving read-only access to the App Service
-
+3. Redis database
+4. Sql Server (for hosting the Sql Database)
+5. Sql Database (as the backed data store for the app service)
+6. Azure Keyvault for storing the connection string and giving read-only access to the App Service
+7. Virtual network
 */
 
 targetScope='subscription'
@@ -44,6 +45,8 @@ param sqlServerName string = '${NAME}-sqlserver'
 @description('Optional. The name of the keyvault resource. Default value is \'<NAME>-kv\'')
 param keyVaultName string = '${NAME}-kv'
 
+@description('Optional. The name of the Redis database. Default value is \'<NAME>-redis\'')
+param redisName string = '${NAME}-redis'
 // @description('Optional. The list of object IDs to grant access to the keyvault. Each object must have properties \'objectId\' (the object id of the resource to grant access to), and \'giveFullAccess\' (if set to \'true\', the object will be given full permissions, including purging secrets, otherwise, only read-only permisions will be given).')
 // param accessObjects array = []
 
@@ -65,6 +68,9 @@ param netFrameworkVersion string = 'v6.0'
 
 @description('Optional. The tags to be used for the resources to be created.')
 param tags object = {}
+
+@description('Optional. If false, the RouteAll feature of the Vnet will be disabled. Default value is false.')
+param enableVnetRouteAll bool = false
 
 // VARIABLES
 var isUsingLimitedPlan = toLower(sku) == 'f1' || toLower(sku) == 'b1'
@@ -93,7 +99,7 @@ module AppServicePlan '../../Modules/appserviceplan.bicep' = {
 
 }
 
-module AppService '../../Modules/appservice.bicep' = {
+module AppService '../..//Modules/appservice.bicep' = {
   name: appServiceName
   scope: ResourceGroup
   params:{  
@@ -105,6 +111,8 @@ module AppService '../../Modules/appservice.bicep' = {
     linuxFxVersion: linuxFxVersion
     netFrameworkVersion: netFrameworkVersion
     platform: platform
+    enableVnetRouteAll: enableVnetRouteAll
+    subnetid: Vnet.outputs.vnet.properties.subnets[0].id
     connectionStrings:[
       {
         connectionString: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${appServiceName}-connection)'
@@ -144,8 +152,8 @@ module KeyVault '../../Modules/keyvault.bicep' = {
   scope: ResourceGroup
   params: {
     NAME: keyVaultName
-    location:LOCATION
-    accessObjects:[
+    location: LOCATION
+    accessObjects: [
       {
         objectId: AppService.outputs.objectId
         giveFullAccess: false
@@ -162,18 +170,64 @@ module KeyVault '../../Modules/keyvault.bicep' = {
         enabled: true
         contentType: 'ConnectionString'
       }
+      {
+        name: '${appServiceName}-redisconnection'
+        value: Redis.outputs.connectionString
+        enabled: true
+        contentType: 'ConnectionString'
+      }
     ]
   }
 }
 
-// module Vnet '../../../Bicep Templates/Modules/vnet.bicep' = {
-//   name: '${appServiceName}-vnet'
-//   params: {
-//     NAME: '${appServiceName}-vnet'
-//     location: LOCATION
-//     addressprefixes: [
-//       '10.1.0.0/29'
-//     ]
-//   }
-//   scope: ResourceGroup
-// }
+module Redis '../../Modules/redis.bicep' = {
+  name: redisName
+  scope: ResourceGroup
+  params:{
+    NAME: redisName
+    location:LOCATION
+  }
+}
+
+module Vnet '../../Modules/vnet.bicep' = {
+  name: '${appServiceName}-vnet'
+  params: {
+    NAME: '${appServiceName}-vnet'
+    location: LOCATION
+    addressprefixes: [
+      '10.0.0.0/16'
+    ]
+    subnets: [
+      {
+        name: '${appServiceName}-vnet-sn'
+        properties: {
+          addressPrefix: '10.0.0.0/24'
+          delegations: [
+            {
+              name: '${appServiceName}-vnet-sn-delegation'
+              properties: {
+                serviceName: 'Microsoft.Web/serverFarms'
+              }
+            }
+          ]
+        }
+      }
+
+      // {
+      //   name: '${sqlServerName}-vnet-sn'
+      //   properties: {
+      //     addressPrefix: '10.0.1.0/24'
+      //     delegations: [
+      //       {
+      //         name: '${appServiceName}-vnet-sn-delegation'
+      //         properties: {
+      //           serviceName: 'Microsoft.Sql/managedInstances'
+      //         }
+      //       }
+      //     ]
+      //   }
+      // }
+    ]
+  }
+  scope: ResourceGroup
+}

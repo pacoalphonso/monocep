@@ -1,5 +1,5 @@
 // REQUIRED PARAMETERS
-@description('Required. The name of the app service.')
+@description('Required. The name of the function app.')
 param NAME string
 
 @description('Required. The app service plan\'s id.')
@@ -12,19 +12,19 @@ param location string = resourceGroup().location
 @description('Optional. The tags for additional information about the resource.')
 param tags object = {}
 
-@description('Optional. The subnet id for the app service to use.')
+@description('Optional. The subnet id for the function app to use.')
 param subnetid string = ''
 
-@description('Optional. The .NET framework version of the app service. Default value is \'v6.0\'.')
+@description('Optional. The .NET framework version of the function app. Default value is \'v6.0\'.')
 param netFrameworkVersion string = 'v6.0'
 
-@description('Optional. The runtime stack of the app service. Default value is \'DOTNETCORE|6.0\'.')
+@description('Optional. The runtime stack of the function app. Default value is \'DOTNETCORE|6.0\'.')
 param linuxFxVersion string = 'DOTNETCORE|6.0'
 
 @description('Optional. The ingestion endpoint for application insights. Default value is \'https://<resource group location>-1.in.applicationinsights.azure.com/\'.')
 param ingestionEndpoint string = 'https://${location}-1.in.applicationinsights.azure.com/'
 
-@description('Optional. The minimum TLS version the app service will use. Default value is \'1.2\'.')
+@description('Optional. The minimum TLS version the function appservice will use. Default value is \'1.2\'.')
 param minTlsVersion string = '1.2'
 
 @description('Optional. The application insight\'s instrumentation key. There is no default value.')
@@ -33,25 +33,25 @@ param instrumentationkey string = ''
 @description('Optional. If true, the app service plan is using a limited plan and thus cannot make use of certain paid plan features: \'Always On\', client certs, and 64-bit process. Default value is false.')
 param isUsingLimitedPlan bool = false
 
-@description('Optional. Which operating system platform to use for the app service plan and consequently, the app service. Default value is \'windows\'.')
+@description('Optional. Which operating system platform to use for the app service plan and consequently, the function app. Default value is \'windows\'.')
 param platform string = 'windows'
 
-@description('Optional. The list of connection string to save in the app service. Each connection string must have properties \'connectionString\' (The actual connection string value, which can also hold a referece to Azure Keyvault), and \'name\' (The name of the connection string). An optional property, \'type\', is used to describe the type of the connection string.')
+@description('Optional. The list of connection string to save in the function app. Each connection string must have properties \'connectionString\' (The actual connection string value, which can also hold a referece to Azure Keyvault), and \'name\' (The name of the connection string). An optional property, \'type\', is used to describe the type of the connection string.')
 param connectionStrings array = []
 
 @description('Optional. If true, the Vnet routeAll feature will be turned on. Default value is false.')
 param enableVnetRouteAll bool = false
 
 // OUTPUT
-@description('Output. The app service\'s object id.')
-output objectId string = AppService.identity.principalId
+@description('Output. The function app\'s object id.')
+output objectId string = FunctionApp.identity.principalId
 
-@description('Output. The app service object.')
-output appService object = AppService
+@description('Output. The function app object.')
+output appService object = FunctionApp
 
 
 // RESOURCE
-resource AppService 'Microsoft.Web/sites@2021-02-01' = {
+resource FunctionApp 'Microsoft.Web/sites@2021-02-01' = {
   
   name: NAME
   location: location
@@ -59,7 +59,7 @@ resource AppService 'Microsoft.Web/sites@2021-02-01' = {
     type:'SystemAssigned'
   }
   tags: tags
-  kind: 'web'
+  kind: 'functionapp'
   properties: {
     serverFarmId: APPSERVICEPLANID
     httpsOnly: true

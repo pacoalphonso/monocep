@@ -9,7 +9,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-01-01' = {
   name: prefix
   location: location 
 }
-module appserviceplan '../Bicep Templates/Modules/appserviceplan.bicep' = {
+module appserviceplan '../monocep/Modules/appserviceplan.bicep' = {
   name: '${prefix}-asp'
   scope:rg
   params:{
@@ -22,7 +22,7 @@ module appserviceplan '../Bicep Templates/Modules/appserviceplan.bicep' = {
 }
 
 
-module keyvault '../Bicep Templates/Modules/keyvault.bicep' = {
+module keyvault '../monocep/Modules/keyvault.bicep' = {
   name: '${prefix}-kv'
   scope:rg
   params:{
@@ -49,7 +49,7 @@ module keyvault '../Bicep Templates/Modules/keyvault.bicep' = {
   }
 }
 
-module appservice '../Bicep Templates/Modules/appservice.bicep' = {
+module appservice '../monocep/Modules/appservice.bicep' = {
   name: '${prefix}-as'
   scope: rg
   params:{
@@ -83,7 +83,7 @@ module redis '../Bicep Templates/Templates/redis.bicep' = {
 //   scope: rg
 // }
 
-module sqlserver '../Bicep Templates/Modules/sqlserver.bicep' = {
+module sqlserver '../monocep/Modules/sqlserver.bicep' = {
   name: '${prefix}-sqlserver'
   scope: rg
   params: {
@@ -93,7 +93,7 @@ module sqlserver '../Bicep Templates/Modules/sqlserver.bicep' = {
   }
 }
 
-module vnet '../Bicep Templates/Modules/vnet.bicep' = {
+module vnet '../monocep/Modules/vnet.bicep' = {
   name: '${prefix}-vnet'
   scope: rg
   params:{

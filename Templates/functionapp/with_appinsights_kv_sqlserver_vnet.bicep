@@ -1,12 +1,12 @@
 /* 
 This template creates the following:
 
-1. App Service
-2. Application Insights connected to the app service
+1. Function App with Vnet integration
+2. Application Insights connected to the function app
 3. Sql Server (for hosting the Sql Database)
-4. Sql Database (as the backed data store for the app service)
-5. Azure Keyvault for storing the connection string and giving read-only access to the App Service
-
+4. Sql Database (as the backed data store for the function app)
+5. Azure Keyvault for storing the connection string and giving read-only access to the function app
+6. Virtual network
 */
 
 targetScope='subscription'
@@ -32,8 +32,8 @@ param sku string = 'S1'
 @description('Optional. The name of the app service plan resource. Default value is \'<NAME>-asp\'')
 param appServicePlanName string = '${NAME}-asp'
 
-@description('Optional. The name of the app service resource. Default value is \'<NAME>-as\'')
-param appServiceName string = '${NAME}-as'
+@description('Optional. The name of the function app resource. Default value is \'<NAME>-fa\'')
+param functionAppName string = '${NAME}-fa'
 
 @description('Optional. The name of the application insights resource. Default value is \'<NAME>-ai\'')
 param applicationInsightsName string = '${NAME}-ai'
@@ -54,17 +54,20 @@ param sqlServerDatabaseName string = '${NAME}-db'
   'linux'
   'windows'
 ])
-@description('Optional. Which operating system platform to use for the app service plan and consequently, the app service. Default value is \'windows\'.')
+@description('Optional. Which operating system platform to use for the app service plan and consequently, the function app. Default value is \'windows\'.')
 param platform string = 'windows'
 
-@description('Optional. The runtime stack of the app service if running on the Linux platform. Default value is \'DOTNETCORE|6.0\'.')
+@description('Optional. The runtime stack of the function app if running on the Linux platform. Default value is \'DOTNETCORE|6.0\'.')
 param linuxFxVersion string = 'DOTNETCORE|6.0'
 
-@description('Optional. The .NET framework version of the app service if runninng on the Windows platform. Default value is \'v6.0\'.')
+@description('Optional. The .NET framework version of the function app if runninng on the Windows platform. Default value is \'v6.0\'.')
 param netFrameworkVersion string = 'v6.0'
 
 @description('Optional. The tags to be used for the resources to be created.')
 param tags object = {}
+
+@description('Optional. If false, the RouteAll feature of the Vnet will be disabled. Default value is false.')
+param enableVnetRouteAll bool = false
 
 // VARIABLES
 var isUsingLimitedPlan = toLower(sku) == 'f1' || toLower(sku) == 'b1'
@@ -93,22 +96,24 @@ module AppServicePlan '../../Modules/appserviceplan.bicep' = {
 
 }
 
-module AppService '../../Modules/appservice.bicep' = {
-  name: appServiceName
+module FunctionApp '../..//Modules/functionapp.bicep' = {
+  name: functionAppName
   scope: ResourceGroup
   params:{  
     APPSERVICEPLANID: AppServicePlan.outputs.id
     location: LOCATION
-    NAME: appServiceName
+    NAME: functionAppName
     instrumentationkey: ApplicationInsights.outputs.InstrumentationKey
     isUsingLimitedPlan: isUsingLimitedPlan
     linuxFxVersion: linuxFxVersion
     netFrameworkVersion: netFrameworkVersion
     platform: platform
+    enableVnetRouteAll: enableVnetRouteAll
+    subnetid: Vnet.outputs.vnet.properties.subnets[0].id
     connectionStrings:[
       {
-        connectionString: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${appServiceName}-connection)'
-        name: '${appServiceName}-connection'
+        connectionString: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${functionAppName}-connection)'
+        name: '${functionAppName}-connection'
         type: 'Custom'
       }
     ]
@@ -144,10 +149,10 @@ module KeyVault '../../Modules/keyvault.bicep' = {
   scope: ResourceGroup
   params: {
     NAME: keyVaultName
-    location:LOCATION
-    accessObjects:[
+    location: LOCATION
+    accessObjects: [
       {
-        objectId: AppService.outputs.objectId
+        objectId: FunctionApp.outputs.objectId
         giveFullAccess: false
       }
       {
@@ -157,7 +162,7 @@ module KeyVault '../../Modules/keyvault.bicep' = {
     ]
     secrets: [
       {
-        name: '${appServiceName}-connection'
+        name: '${functionAppName}-connection'
         value: sqlServerConnectionString
         enabled: true
         contentType: 'ConnectionString'
@@ -166,14 +171,45 @@ module KeyVault '../../Modules/keyvault.bicep' = {
   }
 }
 
-// module Vnet '../../../Bicep Templates/Modules/vnet.bicep' = {
-//   name: '${appServiceName}-vnet'
-//   params: {
-//     NAME: '${appServiceName}-vnet'
-//     location: LOCATION
-//     addressprefixes: [
-//       '10.1.0.0/29'
-//     ]
-//   }
-//   scope: ResourceGroup
-// }
+module Vnet '../../Modules/vnet.bicep' = {
+  name: '${functionAppName}-vnet'
+  params: {
+    NAME: '${functionAppName}-vnet'
+    location: LOCATION
+    addressprefixes: [
+      '10.0.0.0/16'
+    ]
+    subnets: [
+      {
+        name: '${functionAppName}-vnet-sn'
+        properties: {
+          addressPrefix: '10.0.0.0/24'
+          delegations: [
+            {
+              name: '${functionAppName}-vnet-sn-delegation'
+              properties: {
+                serviceName: 'Microsoft.Web/serverFarms'
+              }
+            }
+          ]
+        }
+      }
+
+      // {
+      //   name: '${sqlServerName}-vnet-sn'
+      //   properties: {
+      //     addressPrefix: '10.0.1.0/24'
+      //     delegations: [
+      //       {
+      //         name: '${appServiceName}-vnet-sn-delegation'
+      //         properties: {
+      //           serviceName: 'Microsoft.Sql/managedInstances'
+      //         }
+      //       }
+      //     ]
+      //   }
+      // }
+    ]
+  }
+  scope: ResourceGroup
+}

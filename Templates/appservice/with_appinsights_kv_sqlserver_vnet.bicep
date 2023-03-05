@@ -35,7 +35,7 @@ param appServicePlanName string = '${NAME}-asp'
 @description('Optional. The name of the app service resource. Default value is \'<NAME>-as\'')
 param appServiceName string = '${NAME}-as'
 
-@description('Optional. The name of the application insights resource. Default value is \'<NAME>-asp\'')
+@description('Optional. The name of the application insights resource. Default value is \'<NAME>-ai\'')
 param applicationInsightsName string = '${NAME}-ai'
 
 @description('Optional. The name of the sql server resource. Default value is \'<NAME>-sqlserver\'')
@@ -83,7 +83,7 @@ resource ResourceGroup 'Microsoft.Resources/resourceGroups@2021-01-01' = {
 }
 
 // MODULES
-module AppServicePlan '../../../Bicep Templates/Modules/appserviceplan.bicep' = {
+module AppServicePlan '../../Modules/appserviceplan.bicep' = {
   name: appServicePlanName
   scope: ResourceGroup
   params:{
@@ -96,7 +96,7 @@ module AppServicePlan '../../../Bicep Templates/Modules/appserviceplan.bicep' = 
 
 }
 
-module AppService '../../../Bicep Templates/Modules/appservice.bicep' = {
+module AppService '../..//Modules/appservice.bicep' = {
   name: appServiceName
   scope: ResourceGroup
   params:{  
@@ -121,7 +121,7 @@ module AppService '../../../Bicep Templates/Modules/appservice.bicep' = {
   }
 }
 
-module ApplicationInsights '../../../Bicep Templates/Modules/appinsights.bicep' = {
+module ApplicationInsights '../../Modules/appinsights.bicep' = {
   name: applicationInsightsName
   scope: ResourceGroup
   params: {
@@ -131,7 +131,7 @@ module ApplicationInsights '../../../Bicep Templates/Modules/appinsights.bicep' 
   }
 }
 
-module SqlServer '../../../Bicep Templates/Modules/sqlserver.bicep' = {
+module SqlServer '../../Modules/sqlserver.bicep' = {
   name: sqlServerName
   scope: ResourceGroup
   params: {
@@ -144,7 +144,7 @@ module SqlServer '../../../Bicep Templates/Modules/sqlserver.bicep' = {
   }
 }
 
-module KeyVault '../../../Bicep Templates/Modules/keyvault.bicep' = {
+module KeyVault '../../Modules/keyvault.bicep' = {
   name: keyVaultName
   scope: ResourceGroup
   params: {
@@ -171,7 +171,7 @@ module KeyVault '../../../Bicep Templates/Modules/keyvault.bicep' = {
   }
 }
 
-module Vnet '../../../Bicep Templates/Modules/vnet.bicep' = {
+module Vnet '../../Modules/vnet.bicep' = {
   name: '${appServiceName}-vnet'
   params: {
     NAME: '${appServiceName}-vnet'
